@@ -139,8 +139,8 @@ body {
 <div id="errorContainer"></div>
 
 <div class="dir-tabs" id="dirTabs">
-  <div class="dir-tab active" data-dir="0" onclick="switchDirection(0)">🛒 去永旺</div>
-  <div class="dir-tab" data-dir="1" onclick="switchDirection(1)">🏠 回家</div>
+  <div class="dir-tab active" data-dir="0" onclick="switchDirection(0)">🏠 回家</div>
+  <div class="dir-tab" data-dir="1" onclick="switchDirection(1)">🛒 去永旺</div>
 </div>
 
 <div class="arrival-card" id="arrivalCard"></div>
@@ -382,7 +382,7 @@ function updateArrivalCard() {
 function updateDirTabs() {
   if (!realtimeData || !realtimeData.directions) return;
   // 固定标签：去永旺 / 回家
-  const tabLabels = { 0: '🛒 去永旺', 1: '🏠 回家' };
+  const tabLabels = { 0: '🏠 回家', 1: '🛒 去永旺' };
   realtimeData.directions.forEach(dir => {
     const tab = document.querySelector(`[data-dir="${dir.direction}"]`);
     if (tab) {
