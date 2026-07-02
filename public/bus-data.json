@@ -1,0 +1,109 @@
+{
+  "line": "637路",
+  "city": "武汉",
+  "cityId": "000",
+  "station": {
+    "name": "子期路梅林四街",
+    "sId": "027-4965"
+  },
+  "queryTime": "2026-07-02T08:45:32.275Z",
+  "queryTimeFormatted": "2026/7/2 16:45:32",
+  "directions": [
+    {
+      "lineId": "27238438040",
+      "direction": 0,
+      "directionLabel": "蔷薇路江堤乡新村 → 华园路知音大道口",
+      "targetStation": "子期路梅林四街",
+      "targetOrder": 11,
+      "nextStation": "子期路四新大道",
+      "tip": "将在3分钟内到达，你到车站了吗",
+      "busCount": 4,
+      "buses": [
+        {
+          "busId": "2F3F2E14",
+          "order": 10,
+          "diff": 1,
+          "distance": 463,
+          "travelMinutes": null,
+          "state": 0,
+          "timeStr": "2026-07-02 16:45:28"
+        },
+        {
+          "busId": "D13E46E8",
+          "order": 4,
+          "diff": 7,
+          "distance": 380,
+          "travelMinutes": null,
+          "state": 0,
+          "timeStr": "2026-07-02 16:45:31"
+        },
+        {
+          "busId": "D15FF13A",
+          "order": 26,
+          "diff": 15,
+          "distance": 0,
+          "travelMinutes": null,
+          "state": 1,
+          "timeStr": "2026-07-02 16:45:30"
+        },
+        {
+          "busId": "E03374A1",
+          "order": 29,
+          "diff": 18,
+          "distance": 0,
+          "travelMinutes": null,
+          "state": 1,
+          "timeStr": "2026-07-02 16:45:30"
+        }
+      ]
+    },
+    {
+      "lineId": "27238438041",
+      "direction": 1,
+      "directionLabel": "华园路知音大道口 → 蔷薇路江堤乡新村",
+      "targetStation": "子期路梅林四街",
+      "targetOrder": 31,
+      "nextStation": "四新南路梅林东路",
+      "tip": "还有9分钟，公交出行签个到",
+      "busCount": 4,
+      "buses": [
+        {
+          "busId": "25EA93F9",
+          "order": 25,
+          "diff": 6,
+          "distance": 184,
+          "travelMinutes": null,
+          "state": 0,
+          "timeStr": "2026-07-02 16:45:31"
+        },
+        {
+          "busId": "9701C365",
+          "order": 41,
+          "diff": 10,
+          "distance": 0,
+          "travelMinutes": null,
+          "state": 1,
+          "timeStr": "2026-07-02 16:45:29"
+        },
+        {
+          "busId": "5484FB13",
+          "order": 12,
+          "diff": 19,
+          "distance": 278,
+          "travelMinutes": null,
+          "state": 0,
+          "timeStr": "2026-07-02 16:45:30"
+        },
+        {
+          "busId": "EBB419F9",
+          "order": 7,
+          "diff": 24,
+          "distance": 565,
+          "travelMinutes": null,
+          "state": 0,
+          "timeStr": "2026-07-02 16:45:32"
+        }
+      ]
+    }
+  ]
+}

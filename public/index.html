@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes">
+<title>637路公交 · 子期路梅林四街</title>
+<meta name="description" content="武汉637路公交实时到站信息">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --red: #e74c3c;
+  --green: #27ae60;
+  --blue: #2980b9;
+  --orange: #f39c12;
+  --dark: #2c3e50;
+  --light: #ecf0f1;
+  --white: #ffffff;
+  --gray: #95a5a6;
+  --bus-red: #ff4444;
+  --bus-green: #44bb44;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--light);
+  color: var(--dark);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+.header {
+  background: linear-gradient(135deg, var(--blue), #1a5276);
+  color: white;
+  padding: 12px 16px;
+  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.header-title { font-size: 24px; font-weight: 700; line-height: 1.3; }
+.header-sub { font-size: 14px; opacity: 0.85; margin-top: 2px; }
+.header-refresh { font-size: 12px; opacity: 0.7; margin-top: 4px; cursor: pointer; }
+.arrival-card {
+  background: white; margin: 12px; padding: 20px 16px;
+  border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+.station-label { font-size: 18px; color: var(--gray); margin-bottom: 8px; }
+.station-name { font-size: 32px; font-weight: 800; color: var(--dark); line-height: 1.2; }
+.arrival-tip {
+  font-size: 24px; font-weight: 700; margin-top: 12px;
+  padding: 8px 12px; border-radius: 8px; display: inline-block;
+}
+.arrival-tip.arriving { background: #ffeaa7; color: var(--orange); }
+.arrival-tip.close { background: #dfe6e9; color: var(--dark); }
+.arrival-tip.far { background: var(--light); color: var(--gray); }
+.bus-list { margin-top: 16px; }
+.bus-item { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
+.bus-item:last-child { border-bottom: none; }
+.bus-icon {
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; margin-right: 12px; flex-shrink: 0;
+}
+.bus-icon.at-station { background: var(--bus-red); color: white; }
+.bus-icon.moving { background: var(--bus-green); color: white; }
+.bus-info { flex: 1; }
+.bus-eta { font-size: 22px; font-weight: 700; color: var(--dark); }
+.bus-detail { font-size: 14px; color: var(--gray); margin-top: 2px; }
+.dir-tabs { display: flex; margin: 12px; gap: 8px; }
+.dir-tab {
+  flex: 1; padding: 12px 8px; border-radius: 10px; font-size: 16px;
+  font-weight: 600; text-align: center; cursor: pointer;
+  border: 2px solid var(--blue); background: white; color: var(--blue);
+  transition: all 0.2s;
+}
+.dir-tab.active { background: var(--blue); color: white; }
+.map-section {
+  margin: 12px; border-radius: 12px; overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08); background: white;
+}
+.map-header { padding: 10px 16px; background: white; font-size: 16px; font-weight: 600; color: var(--dark); }
+#map { height: 400px; width: 100%; border-radius: 0 0 12px 12px; }
+.station-list-section {
+  margin: 12px; background: white; border-radius: 12px;
+  padding: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+.station-list-title { font-size: 16px; font-weight: 600; margin-bottom: 12px; color: var(--dark); }
+.station-item { display: flex; align-items: center; padding: 6px 0; font-size: 15px; }
+.station-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  margin-right: 10px; flex-shrink: 0;
+}
+.station-dot.normal { background: #bbb; }
+.station-dot.target { background: var(--red); width: 14px; height: 14px; }
+.station-dot.has-bus { background: var(--bus-red); width: 14px; height: 14px; }
+.station-order { width: 24px; font-size: 13px; color: var(--gray); flex-shrink: 0; }
+.station-sn { flex: 1; font-size: 15px; }
+.station-sn.target { font-weight: 700; color: var(--red); font-size: 17px; }
+.bus-badge {
+  font-size: 11px; background: var(--bus-red); color: white;
+  padding: 2px 6px; border-radius: 4px; margin-left: 4px;
+}
+.footer { text-align: center; padding: 16px; font-size: 13px; color: var(--gray); }
+.refreshing .header-refresh { animation: pulse 1s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 0.7; } 50% { opacity: 0.3; } }
+.loading-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(255,255,255,0.9); display: flex;
+  align-items: center; justify-content: center; z-index: 1000;
+  flex-direction: column;
+}
+.loading-spinner {
+  width: 40px; height: 40px; border: 4px solid #ddd;
+  border-top: 4px solid var(--blue); border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { margin-top: 16px; font-size: 18px; color: var(--dark); }
+.error-msg {
+  background: #ffeaa7; color: var(--orange); padding: 12px 16px;
+  margin: 12px; border-radius: 8px; font-size: 16px; text-align: center;
+}
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">正在获取637路实时数据...</div>
+</div>
+
+<div class="header" id="header">
+  <div class="header-title">🚌 637路公交到站提醒</div>
+  <div class="header-sub" id="stationInfo">武汉 · 子期路梅林四街</div>
+  <div class="header-refresh" id="refreshInfo" onclick="manualRefresh()">点击刷新</div>
+</div>
+
+<div id="errorContainer"></div>
+
+<div class="dir-tabs" id="dirTabs">
+  <div class="dir-tab active" data-dir="0" onclick="switchDirection(0)">方向一</div>
+  <div class="dir-tab" data-dir="1" onclick="switchDirection(1)">方向二</div>
+</div>
+
+<div class="arrival-card" id="arrivalCard"></div>
+
+<div class="map-section">
+  <div class="map-header">📍 线路地图 · 车辆实时位置</div>
+  <div id="map"></div>
+</div>
+
+<div class="station-list-section" id="stationListSection"></div>
+
+<div class="footer">
+  数据来源：车来了 | 每30秒自动刷新 | 仅供参考
+</div>
+
+<script>
+// ========== 全局变量 ==========
+let currentDirection = 0;
+let realtimeData = null;
+let routeData = null;
+let map = null;
+let routePolylines = [];
+let stationMarkers = [];
+let busMarkers = [];
+let targetMarker = null;
+let refreshTimer = null;
+
+const STATION_COLORS = {
+  normal: '#bbb', target: '#e74c3c', bus: '#ff4444', busMoving: '#44bb44'
+};
+const TARGET_STATION_NAME = '子期路梅林四街';
+
+// ========== 坐标转换 BD-09 → GCJ-02 ==========
+function bd09ToGcj02(bdLon, bdLat) {
+  const xPi = 3.14159265358979324 * 3000.0 / 180.0;
+  const x = bdLon - 0.0065;
+  const y = bdLat - 0.006;
+  const z = Math.sqrt(x * x + y * y) - 0.00002 * Math.sin(y * xPi);
+  const theta = Math.atan2(y, x) - 0.000003 * Math.cos(x * xPi);
+  return [z * Math.cos(theta), z * Math.sin(theta)];
+}
+
+// ========== 初始化地图 ==========
+function initMap() {
+  map = L.map('map', { zoomControl: true, attributionControl: false });
+  L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
+    subdomains: ['1', '2', '3', '4'], maxZoom: 18, minZoom: 3
+  }).addTo(map);
+  const defaultGcj = bd09ToGcj02(114.23, 30.52);
+  map.setView([defaultGcj[1], defaultGcj[0]], 14);
+}
+
+// ========== 绘制路线和站点 ==========
+function drawRouteAndStations() {
+  routePolylines.forEach(p => map.removeLayer(p));
+  stationMarkers.forEach(m => map.removeLayer(m));
+  busMarkers.forEach(m => map.removeLayer(m));
+  if (targetMarker) map.removeLayer(targetMarker);
+  routePolylines = []; stationMarkers = []; busMarkers = []; targetMarker = null;
+
+  if (!routeData || !routeData.routes) return;
+  const currentRoute = routeData.routes.find(r => r.direction === currentDirection)
+    || routeData.routes[currentDirection === 0 ? 0 : 1];
+  if (!currentRoute) return;
+
+  const stations = currentRoute.stations;
+  const coords = stations.map(s => {
+    const gcj = bd09ToGcj02(s.lng, s.lat);
+    return [gcj[1], gcj[0]];
+  });
+
+  const polyline = L.polyline(coords, {
+    color: '#2980b9', weight: 5, opacity: 0.7, smoothFactor: 1
+  }).addTo(map);
+  routePolylines.push(polyline);
+
+  stations.forEach((s, i) => {
+    const gcj = bd09ToGcj02(s.lng, s.lat);
+    const pos = [gcj[1], gcj[0]];
+    const isTarget = s.sn === TARGET_STATION_NAME;
+    const hasBus = realtimeData && realtimeData.directions
+      && checkBusAtStation(currentDirection, s.order);
+
+    let radius = 5, color = STATION_COLORS.normal, fillColor = STATION_COLORS.normal;
+    if (isTarget) { radius = 10; color = fillColor = STATION_COLORS.target; }
+    else if (hasBus) { radius = 7; color = fillColor = STATION_COLORS.bus; }
+
+    const circle = L.circleMarker(pos, {
+      radius, color, fillColor, fillOpacity: 0.9, weight: 2
+    }).addTo(map);
+    stationMarkers.push(circle);
+
+    if (isTarget || i === 0 || i === stations.length - 1 || hasBus) {
+      const label = L.marker(pos, {
+        icon: L.divIcon({
+          className: 'station-label-icon',
+          html: `<div style="background:${isTarget ? '#e74c3c' : (hasBus ? '#ff4444' : '#2c3e50')};color:white;padding:2px 8px;border-radius:4px;font-size:${isTarget ? '14px' : '12px'};font-weight:${isTarget ? '700' : '500'};white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,0.3);">${s.sn}</div>`,
+          iconSize: [0, 0], iconAnchor: [0, 20]
+        })
+      }).addTo(map);
+      stationMarkers.push(label);
+    }
+  });
+
+  // 目标站点脉冲标记
+  const targetStation = stations.find(s => s.sn === TARGET_STATION_NAME);
+  if (targetStation) {
+    const gcj = bd09ToGcj02(targetStation.lng, targetStation.lat);
+    targetMarker = L.marker([gcj[1], gcj[0]], {
+      icon: L.divIcon({
+        className: 'target-station-icon',
+        html: `<div style="position:relative;width:30px;height:30px;">
+          <div style="width:30px;height:30px;background:rgba(231,76,60,0.3);border-radius:50%;position:absolute;animation:targetPulse 2s infinite;"></div>
+          <div style="width:20px;height:20px;background:#e74c3c;border-radius:50%;position:absolute;top:5px;left:5px;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>
+        </div>
+        <style>@keyframes targetPulse{0%,100%{transform:scale(1);opacity:0.3;}50%{transform:scale(1.5);opacity:0.15;}}</style>`,
+        iconSize: [30, 30], iconAnchor: [15, 15]
+      })
+    }).addTo(map);
+  }
+
+  drawBusPositions(currentRoute);
+
+  if (coords.length > 0) {
+    map.fitBounds(polyline.getBounds(), { padding: [30, 30], maxZoom: 15 });
+    if (targetStation) {
+      const gcj = bd09ToGcj02(targetStation.lng, targetStation.lat);
+      map.setView([gcj[1], gcj[0]], 15, { animate: true });
+    }
+  }
+}
+
+function checkBusAtStation(direction, stationOrder) {
+  if (!realtimeData || !realtimeData.directions) return false;
+  const dirData = realtimeData.directions.find(d => d.direction === direction);
+  if (!dirData || !dirData.buses) return false;
+  return dirData.buses.some(b => b.order === stationOrder && b.state === 1);
+}
+
+function drawBusPositions(currentRoute) {
+  if (!realtimeData || !realtimeData.directions || !currentRoute) return;
+  const dirData = realtimeData.directions.find(d => d.direction === currentDirection);
+  if (!dirData || !dirData.buses) return;
+  const stations = currentRoute.stations;
+
+  dirData.buses.forEach(bus => {
+    const busStation = stations.find(s => s.order === bus.order);
+    if (!busStation) return;
+    const gcj = bd09ToGcj02(busStation.lng, busStation.lat);
+    let pos = [gcj[1], gcj[0]];
+
+    if (bus.state === 0) {
+      const nextOrder = bus.order + 1;
+      const nextStation = stations.find(s => s.order === nextOrder);
+      if (nextStation) {
+        const nextGcj = bd09ToGcj02(nextStation.lng, nextStation.lat);
+        pos[0] = (pos[0] + nextGcj[1]) / 2;
+        pos[1] = (pos[1] + nextGcj[0]) / 2;
+      }
+    }
+
+    const isClosest = bus === dirData.buses[0];
+    let bgColor, iconText;
+    if (bus.state === 1) { bgColor = '#ff4444'; iconText = '🚌'; }
+    else { bgColor = '#44bb44'; iconText = '🚐'; }
+
+    const size = isClosest ? 36 : 28;
+    const fontSize = isClosest ? 18 : 14;
+
+    const marker = L.marker(pos, {
+      icon: L.divIcon({
+        className: 'bus-marker',
+        html: `<div style="background:${bgColor};color:white;width:${size}px;height:${size}px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:${fontSize}px;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4);${isClosest ? 'animation:busBounce 1s infinite;' : ''}">${iconText}</div>
+        <div style="text-align:center;font-size:${isClosest ? '14px' : '11px'};font-weight:700;color:${bgColor};margin-top:2px;white-space:nowrap;">${bus.diff}站 · ${bus.travelMinutes ? bus.travelMinutes + '分' : '~'}</div>
+        <style>@keyframes busBounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-4px);}}</style>`,
+        iconSize: [size, size + 18], iconAnchor: [size/2, size/2]
+      }),
+      zIndexOffset: isClosest ? 1000 : 500
+    }).addTo(map);
+    busMarkers.push(marker);
+  });
+}
+
+// ========== 更新到站信息卡片 ==========
+function updateArrivalCard() {
+  const card = document.getElementById('arrivalCard');
+  if (!realtimeData || !realtimeData.directions) {
+    card.innerHTML = '<div class="error-msg">暂无实时数据</div>';
+    return;
+  }
+  const dirData = realtimeData.directions.find(d => d.direction === currentDirection);
+  if (!dirData) {
+    card.innerHTML = '<div class="error-msg">暂无该方向数据</div>';
+    return;
+  }
+
+  const tip = dirData.tip || '';
+  const buses = dirData.buses || [];
+  const closestBus = buses[0];
+
+  let tipClass = 'far', tipIcon = '⏳';
+  if (closestBus) {
+    if (closestBus.diff <= 1) { tipClass = 'arriving'; tipIcon = '🚨'; }
+    else if (closestBus.diff <= 5) { tipClass = 'close'; tipIcon = '🔔'; }
+  }
+
+  let html = `
+    <div class="station-label">当前查看站点</div>
+    <div class="station-name">${realtimeData.station.name}</div>
+    <div style="font-size:16px;color:#7f8c8d;margin-top:4px;">${dirData.directionLabel}</div>
+  `;
+  if (tip) html += `<div class="arrival-tip ${tipClass}">${tipIcon} ${tip}</div>`;
+
+  if (buses.length > 0) {
+    html += '<div class="bus-list">';
+    buses.forEach((bus, i) => {
+      const etaText = bus.travelMinutes ? `约${bus.travelMinutes}分钟到达` : `还有${bus.diff}站`;
+      const stateText = bus.state === 1 ? '停站中' : '行驶中';
+      const iconClass = bus.state === 1 ? 'at-station' : 'moving';
+      const iconEmoji = bus.state === 1 ? '🚌' : '🚐';
+      const distanceText = bus.distance ? `${bus.distance}m` : '';
+      html += `
+        <div class="bus-item">
+          <div class="bus-icon ${iconClass}">${iconEmoji}</div>
+          <div class="bus-info">
+            <div class="bus-eta">${i === 0 ? '最近一班' : '第' + (i+1) + '班'}：${etaText}</div>
+            <div class="bus-detail">${stateText} · 距目标站${bus.diff}站 ${distanceText ? '· ' + distanceText : ''}</div>
+          </div>
+        </div>
+      `;
+    });
+    html += '</div>';
+  } else {
+    html += '<div class="arrival-tip far">⏳ 暂无车辆信息，可能已停运</div>';
+  }
+  card.innerHTML = html;
+}
+
+function updateDirTabs() {
+  if (!realtimeData || !realtimeData.directions) return;
+  realtimeData.directions.forEach(dir => {
+    const tab = document.querySelector(`[data-dir="${dir.direction}"]`);
+    if (tab) {
+      const parts = dir.directionLabel.split(' → ');
+      if (parts.length === 2) {
+        const start = parts[0].length > 6 ? parts[0].substring(0, 6) + '…' : parts[0];
+        const end = parts[1].length > 6 ? parts[1].substring(0, 6) + '…' : parts[1];
+        tab.textContent = `${start} → ${end}`;
+      } else {
+        tab.textContent = dir.directionLabel;
+      }
+    }
+  });
+}
+
+function updateStationList() {
+  const section = document.getElementById('stationListSection');
+  if (!routeData || !routeData.routes) { section.innerHTML = ''; return; }
+  const currentRoute = routeData.routes.find(r => r.direction === currentDirection)
+    || routeData.routes[currentDirection === 0 ? 0 : 1];
+  if (!currentRoute) { section.innerHTML = ''; return; }
+
+  const stations = currentRoute.stations;
+  const dirData = realtimeData?.directions?.find(d => d.direction === currentDirection);
+
+  let html = `<div class="station-list-title">🛤️ ${currentRoute.directionLabel}（${stations.length}站）</div>`;
+  stations.forEach(s => {
+    const isTarget = s.sn === TARGET_STATION_NAME;
+    const hasBus = dirData?.buses?.some(b => b.order === s.order && b.state === 1);
+    const busClose = dirData?.buses?.some(b => b.order === s.order);
+    let dotClass = 'normal';
+    if (isTarget) dotClass = 'target';
+    else if (hasBus) dotClass = 'has-bus';
+    html += `
+      <div class="station-item">
+        <div class="station-dot ${dotClass}"></div>
+        <div class="station-order">#${s.order}</div>
+        <div class="station-sn ${isTarget ? 'target' : ''}">${s.sn}</div>
+        ${busClose ? '<span class="bus-badge">有车</span>' : ''}
+      </div>
+    `;
+  });
+  section.innerHTML = html;
+}
+
+function switchDirection(dir) {
+  currentDirection = dir;
+  document.querySelectorAll('.dir-tab').forEach(tab => {
+    tab.classList.toggle('active', parseInt(tab.dataset.dir) === dir);
+  });
+  updateArrivalCard();
+  drawRouteAndStations();
+  updateStationList();
+}
+
+function manualRefresh() {
+  document.getElementById('header').classList.add('refreshing');
+  fetchAllData();
+}
+
+// ========== 数据获取（从同源服务器API） ==========
+async function fetchRealtime() {
+  try {
+    const resp = await fetch('/api/realtime');
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    realtimeData = await resp.json();
+  } catch (error) {
+    console.error('获取实时数据失败:', error);
+  }
+}
+
+async function fetchRoute() {
+  try {
+    const resp = await fetch('/api/route');
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    routeData = await resp.json();
+  } catch (error) {
+    console.error('获取路线数据失败:', error);
+  }
+}
+
+// ========== 数据获取主流程 ==========
+async function fetchAllData() {
+  try {
+    await Promise.all([fetchRealtime(), fetchRoute()]);
+
+    if (!realtimeData) throw new Error('实时数据为空');
+    if (!routeData) throw new Error('路线数据为空');
+
+    document.getElementById('loadingOverlay').style.display = 'none';
+    document.getElementById('errorContainer').innerHTML = '';
+    document.getElementById('header').classList.remove('refreshing');
+
+    const refreshInfo = document.getElementById('refreshInfo');
+    refreshInfo.textContent = `更新于 ${new Date().toLocaleTimeString('zh-CN')} · 实时更新 · 点击刷新`;
+
+    updateArrivalCard();
+    updateDirTabs();
+    drawRouteAndStations();
+    updateStationList();
+
+  } catch (error) {
+    console.error('数据获取失败:', error);
+    document.getElementById('loadingOverlay').style.display = 'none';
+    document.getElementById('errorContainer').innerHTML =
+      `<div class="error-msg">数据获取失败：${error.message}，将在30秒后重试</div>`;
+    document.getElementById('header').classList.remove('refreshing');
+  }
+}
+
+// ========== 启动 ==========
+async function init() {
+  initMap();
+  await fetchAllData();
+  // 每30秒自动刷新
+  refreshTimer = setInterval(fetchAllData, 30000);
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "name": "bus-monitor-637",
+  "version": "1.0.0",
+  "description": "武汉637路公交实时到站监控 - 子期路梅林四街",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
