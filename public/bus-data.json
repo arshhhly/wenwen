@@ -6,8 +6,8 @@
     "name": "子期路梅林四街",
     "sId": "027-4965"
   },
-  "queryTime": "2026-07-02T09:32:02.954Z",
-  "queryTimeFormatted": "2026/7/2 17:32:02",
+  "queryTime": "2026-07-02T09:48:03.047Z",
+  "queryTimeFormatted": "2026/7/2 17:48:03",
   "directions": [
     {
       "lineId": "27238438040",
@@ -16,53 +16,53 @@
       "targetStation": "子期路梅林四街",
       "targetOrder": 11,
       "nextStation": "子期路四新大道",
-      "tip": "车辆即将到站，请准备上车",
+      "tip": "还有9分钟，公交出行签个到",
       "busCount": 5,
       "buses": [
         {
-          "busId": "B25432A",
-          "order": 11,
-          "diff": 0,
-          "distance": 341,
+          "busId": "25EA93F9",
+          "order": 7,
+          "diff": 4,
+          "distance": 147,
           "travelMinutes": null,
           "state": 0,
-          "timeStr": "2026-07-02 17:32:02"
+          "timeStr": "2026-07-02 17:47:59"
         },
         {
           "busId": "9701C365",
-          "order": 6,
-          "diff": 5,
-          "distance": 146,
+          "order": 15,
+          "diff": 4,
+          "distance": 93,
           "travelMinutes": null,
           "state": 0,
-          "timeStr": "2026-07-02 17:32:03"
+          "timeStr": "2026-07-02 17:48:02"
         },
         {
-          "busId": "AE418AEC",
-          "order": 19,
+          "busId": "B25432A",
+          "order": 18,
+          "diff": 7,
+          "distance": 0,
+          "travelMinutes": null,
+          "state": 1,
+          "timeStr": "2026-07-02 17:48:02"
+        },
+        {
+          "busId": "5484FB13",
+          "order": 3,
           "diff": 8,
           "distance": 0,
           "travelMinutes": null,
           "state": 1,
-          "timeStr": "2026-07-02 17:32:00"
+          "timeStr": "2026-07-02 17:48:01"
         },
         {
-          "busId": "D13E46E8",
-          "order": 32,
-          "diff": 21,
+          "busId": "AE418AEC",
+          "order": 27,
+          "diff": 16,
           "distance": 0,
           "travelMinutes": null,
           "state": 1,
-          "timeStr": "2026-07-02 17:32:01"
-        },
-        {
-          "busId": "2F3F2E14",
-          "order": 34,
-          "diff": 23,
-          "distance": 229,
-          "travelMinutes": null,
-          "state": 0,
-          "timeStr": "2026-07-02 17:32:02"
+          "timeStr": "2026-07-02 17:48:00"
         }
       ]
     },
@@ -73,53 +73,53 @@
       "targetStation": "子期路梅林四街",
       "targetOrder": 31,
       "nextStation": "四新南路梅林东路",
-      "tip": "还有11分钟，公交出行签个到",
+      "tip": "将在2分钟内到达，你到车站了吗",
       "busCount": 5,
       "buses": [
         {
-          "busId": "EBB419F9",
-          "order": 37,
-          "diff": 6,
-          "distance": 176,
+          "busId": "105F7DD6",
+          "order": 28,
+          "diff": 3,
+          "distance": 0,
           "travelMinutes": null,
-          "state": 0,
-          "timeStr": "2026-07-02 17:32:01"
+          "state": 1,
+          "timeStr": "2026-07-02 17:48:02"
         },
         {
           "busId": "2DFDD590",
-          "order": 24,
-          "diff": 7,
-          "distance": 0,
-          "travelMinutes": null,
-          "state": 1,
-          "timeStr": "2026-07-02 17:32:02"
-        },
-        {
-          "busId": "5484FB13",
-          "order": 39,
-          "diff": 8,
-          "distance": 87,
+          "order": 36,
+          "diff": 5,
+          "distance": 183,
           "travelMinutes": null,
           "state": 0,
-          "timeStr": "2026-07-02 17:32:00"
-        },
-        {
-          "busId": "105F7DD6",
-          "order": 19,
-          "diff": 12,
-          "distance": 0,
-          "travelMinutes": null,
-          "state": 1,
-          "timeStr": "2026-07-02 17:31:59"
+          "timeStr": "2026-07-02 17:48:02"
         },
         {
           "busId": "E03374A1",
-          "order": 12,
-          "diff": 19,
+          "order": 20,
+          "diff": 11,
           "distance": 0,
           "travelMinutes": null,
           "state": 1,
-          "timeStr": "2026-07-02 17:32:01"
+          "timeStr": "2026-07-02 17:47:59"
+        },
+        {
+          "busId": "D15FF13A",
+          "order": 14,
+          "diff": 17,
+          "distance": 0,
+          "travelMinutes": null,
+          "state": 1,
+          "timeStr": "2026-07-02 17:48:02"
+        },
+        {
+          "busId": "2F3F2E14",
+          "order": 2,
+          "diff": 29,
+          "distance": 0,
+          "travelMinutes": null,
+          "state": 1,
+          "timeStr": "2026-07-02 17:48:02"
         }
       ]
     }
