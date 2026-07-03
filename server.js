@@ -259,6 +259,12 @@ async function fetchRealtimeData() {
 
       const startSn = lineDetail.line?.startSn || entry.line.startSn || '-';
       const endSn = lineDetail.line?.endSn || entry.line.endSn || '-';
+      const firstTime = lineDetail.line?.firstTime || '';
+      const lastTime = lineDetail.line?.lastTime || '';
+      const depDesc = lineDetail.depDesc || '';
+      const depIntervalM = typeof lineDetail.depIntervalM === 'number' ? lineDetail.depIntervalM : -1;
+      const tipDesc = lineDetail.tip?.desc || '';
+      const tipDestType = lineDetail.tip?.destType || 0;
 
       return {
         lineId: entry.line.lineId,
@@ -267,7 +273,12 @@ async function fetchRealtimeData() {
         targetStation: entry.targetStation.sn,
         targetOrder: entry.targetStation.order,
         nextStation: entry.nextStation?.sn || '',
-        tip: lineDetail.tip?.desc || lineDetail.line?.desc || lineDetail.line?.shortDesc || '',
+        tip: tipDesc,
+        tipDestType,
+        depDesc,
+        depIntervalM,
+        firstTime,
+        lastTime,
         busCount: buses.length,
         buses
       };

@@ -407,6 +407,9 @@ function updateArrivalCard() {
   }
 
   const tip = dirData.tip || '';
+  const depDesc = dirData.depDesc || '';
+  const firstTime = dirData.firstTime || '';
+  const lastTime = dirData.lastTime || '';
   const buses = dirData.buses || [];
   const closestBus = buses[0];
 
@@ -421,7 +424,14 @@ function updateArrivalCard() {
     <div class="station-name">${dirData.targetStation || getTargetStationName(currentDirection)}</div>
     <div style="font-size:16px;color:#7f8c8d;margin-top:4px;">${dirData.directionLabel}</div>
   `;
+
+  // 优先显示 API 给出的预测时间文本（tip.desc）
   if (tip) html += `<div class="arrival-tip ${tipClass}">${tipIcon} ${tip}</div>`;
+
+  // 显示发车时段
+  if (firstTime && lastTime) {
+    html += `<div style="font-size:13px;color:#95a5a6;margin-top:8px;">🕐 运营时段：${firstTime} ~ ${lastTime}</div>`;
+  }
 
   if (buses.length > 0) {
     html += '<div class="bus-list">';
@@ -442,8 +452,12 @@ function updateArrivalCard() {
       `;
     });
     html += '</div>';
+  } else if (depDesc) {
+    // 没车时显示 depDesc（如"上一班5分钟前过站"），并提示下一班还要等
+    html += `<div class="arrival-tip far" style="margin-top:12px;">📋 ${depDesc}</div>`;
+    html += `<div style="font-size:14px;color:#7f8c8d;margin-top:8px;">⏳ 目标站附近暂无车辆，可能车辆还在路上</div>`;
   } else {
-    html += '<div class="arrival-tip far">⏳ 暂无车辆信息，可能已停运</div>';
+    html += '<div class="arrival-tip far">⏳ 暂无车辆信息</div>';
   }
   card.innerHTML = html;
 }
