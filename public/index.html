@@ -132,7 +132,7 @@ body {
 
 <div class="header" id="header">
   <div class="header-title">🚌 637路公交到站提醒</div>
-  <div class="header-sub" id="stationInfo">武汉 · 子期路梅林四街</div>
+  <div class="header-sub" id="stationInfo">武汉637路 · 实时到站</div>
   <div class="header-refresh" id="refreshInfo" onclick="manualRefresh()">点击刷新</div>
 </div>
 
@@ -171,7 +171,14 @@ let refreshTimer = null;
 const STATION_COLORS = {
   normal: '#bbb', target: '#e74c3c', bus: '#ff4444', busMoving: '#44bb44'
 };
-const TARGET_STATION_NAME = '子期路梅林四街';
+// 每个方向的目标站点不同
+const TARGET_STATIONS = {
+  0: '蔷薇路永旺梦乐城',  // 回家方向
+  1: '子期路梅林四街'     // 去永旺方向
+};
+function getTargetStationName(direction) {
+  return TARGET_STATIONS[direction] || TARGET_STATIONS[0];
+}
 
 // ========== 坐标转换 BD-09 → GCJ-02 ==========
 function bd09ToGcj02(bdLon, bdLat) {
@@ -220,7 +227,8 @@ function drawRouteAndStations() {
   stations.forEach((s, i) => {
     const gcj = bd09ToGcj02(s.lng, s.lat);
     const pos = [gcj[1], gcj[0]];
-    const isTarget = s.sn === TARGET_STATION_NAME;
+    const targetName = getTargetStationName(currentDirection);
+    const isTarget = s.sn === targetName;
     const hasBus = realtimeData && realtimeData.directions
       && checkBusAtStation(currentDirection, s.order);
 
@@ -246,7 +254,8 @@ function drawRouteAndStations() {
   });
 
   // 目标站点脉冲标记
-  const targetStation = stations.find(s => s.sn === TARGET_STATION_NAME);
+  const targetName = getTargetStationName(currentDirection);
+  const targetStation = stations.find(s => s.sn === targetName);
   if (targetStation) {
     const gcj = bd09ToGcj02(targetStation.lng, targetStation.lat);
     targetMarker = L.marker([gcj[1], gcj[0]], {
@@ -349,7 +358,7 @@ function updateArrivalCard() {
 
   let html = `
     <div class="station-label">当前查看站点</div>
-    <div class="station-name">${realtimeData.station.name}</div>
+    <div class="station-name">${dirData.targetStation || getTargetStationName(currentDirection)}</div>
     <div style="font-size:16px;color:#7f8c8d;margin-top:4px;">${dirData.directionLabel}</div>
   `;
   if (tip) html += `<div class="arrival-tip ${tipClass}">${tipIcon} ${tip}</div>`;
@@ -402,8 +411,9 @@ function updateStationList() {
   const dirData = realtimeData?.directions?.find(d => d.direction === currentDirection);
 
   let html = `<div class="station-list-title">🛤️ ${currentRoute.directionLabel}（${stations.length}站）</div>`;
+  const targetName = getTargetStationName(currentDirection);
   stations.forEach(s => {
-    const isTarget = s.sn === TARGET_STATION_NAME;
+    const isTarget = s.sn === targetName;
     const hasBus = dirData?.buses?.some(b => b.order === s.order && b.state === 1);
     const busClose = dirData?.buses?.some(b => b.order === s.order);
     let dotClass = 'normal';
@@ -426,6 +436,8 @@ function switchDirection(dir) {
   document.querySelectorAll('.dir-tab').forEach(tab => {
     tab.classList.toggle('active', parseInt(tab.dataset.dir) === dir);
   });
+  // 更新头部站点名
+  document.getElementById('stationInfo').textContent = '目标站：' + getTargetStationName(dir);
   updateArrivalCard();
   drawRouteAndStations();
   updateStationList();
@@ -468,6 +480,7 @@ async function fetchAllData() {
     document.getElementById('loadingOverlay').style.display = 'none';
     document.getElementById('errorContainer').innerHTML = '';
     document.getElementById('header').classList.remove('refreshing');
+    document.getElementById('stationInfo').textContent = '目标站：' + getTargetStationName(currentDirection);
 
     const refreshInfo = document.getElementById('refreshInfo');
     refreshInfo.textContent = `更新于 ${new Date().toLocaleTimeString('zh-CN')} · 实时更新 · 点击刷新`;

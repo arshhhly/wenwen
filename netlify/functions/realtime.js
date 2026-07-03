@@ -2,11 +2,16 @@
  * Netlify Function: 实时到站数据
  * 路径: /api/realtime
  * 每次请求实时调用车来了API获取最新数据
+ * 方向0(回家): 目标站=蔷薇路永旺梦乐城
+ * 方向1(去永旺): 目标站=子期路梅林四街
  */
 
 const { getUserId, encryptedAction } = require('../../src/chelaile');
 
-const TARGET_STATION = { name: '子期路梅林四街', sId: '027-4965' };
+const DIRECTION_CONFIGS = [
+  { direction: 0, label: '回家', lineId: '27238438040', targetStation: { name: '蔷薇路永旺梦乐城', sId: '027-3353' } },
+  { direction: 1, label: '去永旺', lineId: '27238438041', targetStation: { name: '子期路梅林四街', sId: '027-4965' } }
+];
 
 exports.handler = async function (event, context) {
   const headers = {
@@ -22,37 +27,37 @@ exports.handler = async function (event, context) {
   }
 
   try {
-    const userId = getUserId();
+    // 每个方向查不同的站点
+    const directions = await Promise.all(DIRECTION_CONFIGS.map(async (config) => {
+      const userId = getUserId();
 
-    // 获取站点详情
-    const stationDetail = await encryptedAction('bus/stop!encryptedStnDetail.action', {
-      stationId: TARGET_STATION.sId,
-      destSId: '-1'
-    }, userId);
+      // 获取该站点的详情
+      const stationDetail = await encryptedAction('bus/stop!encryptedStnDetail.action', {
+        stationId: config.targetStation.sId,
+        destSId: '-1'
+      }, userId);
 
-    // 过滤637路
-    const lines = (stationDetail.lines || []).filter(entry => {
-      const no = (entry.line.lineNo || entry.line.name || '').replace(/路/g, '').toLowerCase();
-      return no === '637' || no === 'r75257';
-    });
+      // 过滤637路且匹配lineId
+      const entry = (stationDetail.lines || []).find(e => {
+        const no = (e.line.lineNo || e.line.name || '').replace(/路/g, '').toLowerCase();
+        return (no === '637' || no === 'r75257') && e.line.lineId === config.lineId;
+      });
 
-    if (lines.length === 0) {
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({
-          line: '637路', city: '武汉', cityId: '000',
-          station: { name: TARGET_STATION.name, sId: TARGET_STATION.sId },
-          queryTime: new Date().toISOString(),
-          queryTimeFormatted: new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }),
-          directions: [],
-          error: '未找到637路数据，可能当前无车辆运行'
-        })
-      };
-    }
+      if (!entry) {
+        return {
+          lineId: config.lineId,
+          direction: config.direction,
+          directionLabel: config.direction === 0
+            ? '蔷薇路江堤乡新村 → 华园路知音大道口'
+            : '华园路知音大道口 → 蔷薇路江堤乡新村',
+          targetStation: config.targetStation.name,
+          targetOrder: null,
+          tip: '当前方向暂无车辆运行',
+          busCount: 0,
+          buses: []
+        };
+      }
 
-    // 获取每个方向的实时数据
-    const directions = await Promise.all(lines.map(async (entry) => {
       const lineDetail = await encryptedAction('bus/line!encryptedLineDetail.action', {
         lineId: entry.line.lineId,
         lineName: entry.line.name || entry.line.lineNo,
@@ -86,7 +91,7 @@ exports.handler = async function (event, context) {
 
       return {
         lineId: entry.line.lineId,
-        direction: entry.line.direction,
+        direction: config.direction,
         directionLabel: `${startSn} → ${endSn}`,
         targetStation: entry.targetStation.sn,
         targetOrder: entry.targetStation.order,
@@ -105,9 +110,14 @@ exports.handler = async function (event, context) {
         city: '武汉',
         cityId: '000',
         station: {
-          name: stationDetail.sn || TARGET_STATION.name,
-          sId: stationDetail.sId || TARGET_STATION.sId
+          name: DIRECTION_CONFIGS[1].targetStation.name,
+          sId: DIRECTION_CONFIGS[1].targetStation.sId
         },
+        directionStations: DIRECTION_CONFIGS.map(c => ({
+          direction: c.direction,
+          name: c.targetStation.name,
+          sId: c.targetStation.sId
+        })),
         queryTime: new Date().toISOString(),
         queryTimeFormatted: new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }),
         directions

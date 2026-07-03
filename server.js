@@ -22,7 +22,11 @@ const CITY_ID = '000'; // 武汉
 const AES_KEY = '422556651C7F7B2B5C266EED06068230';
 const MD5_SALT = 'qwihrnbtmj';
 const LINE_NO = '637';
-const TARGET_STATION = { name: '子期路梅林四街', sId: '027-4965' };
+// 每个方向查不同的目标站点
+const DIRECTION_CONFIGS = [
+  { direction: 0, label: '回家', lineId: '27238438040', targetStation: { name: '蔷薇路永旺梦乐城', sId: '027-3353' } },
+  { direction: 1, label: '去永旺', lineId: '27238438041', targetStation: { name: '子期路梅林四街', sId: '027-4965' } }
+];
 
 const SCRAPE_INTERVAL = 30 * 1000; // 30秒刷新
 
@@ -159,10 +163,11 @@ async function fetchRouteData() {
       line: '637路',
       city: '武汉',
       cityId: CITY_ID,
-      targetStation: {
-        name: TARGET_STATION.name,
-        sId: TARGET_STATION.sId
-      },
+      targetStations: DIRECTION_CONFIGS.map(c => ({
+        direction: c.direction,
+        name: c.targetStation.name,
+        sId: c.targetStation.sId
+      })),
       routes: routeResults
     };
 
@@ -188,24 +193,35 @@ async function fetchRealtimeData() {
   try {
     console.log(`[REALTIME] 查询637路实时数据... (${new Date().toLocaleString('zh-CN')})`);
 
-    // 获取站点详情
-    const stationDetail = await encryptedAction('bus/stop!encryptedStnDetail.action', {
-      stationId: TARGET_STATION.sId,
-      destSId: '-1'
-    });
+    // 每个方向查不同的站点
+    const directions = await Promise.all(DIRECTION_CONFIGS.map(async (config) => {
+      // 获取该站点的详情
+      const stationDetail = await encryptedAction('bus/stop!encryptedStnDetail.action', {
+        stationId: config.targetStation.sId,
+        destSId: '-1'
+      });
 
-    // 过滤637路
-    const lines = (stationDetail.lines || []).filter(entry => {
-      const no = (entry.line.lineNo || entry.line.name || '').replace(/路/g, '').toLowerCase();
-      return no === '637' || no === 'r75257';
-    });
+      // 过滤637路且匹配lineId
+      const entry = (stationDetail.lines || []).find(e => {
+        const no = (e.line.lineNo || e.line.name || '').replace(/路/g, '').toLowerCase();
+        return (no === '637' || no === 'r75257') && e.line.lineId === config.lineId;
+      });
 
-    if (lines.length === 0) {
-      throw new Error('未找到637路');
-    }
+      if (!entry) {
+        return {
+          lineId: config.lineId,
+          direction: config.direction,
+          directionLabel: config.direction === 0
+            ? '蔷薇路江堤乡新村 → 华园路知音大道口'
+            : '华园路知音大道口 → 蔷薇路江堤乡新村',
+          targetStation: config.targetStation.name,
+          targetOrder: null,
+          tip: '当前方向暂无车辆运行',
+          busCount: 0,
+          buses: []
+        };
+      }
 
-    // 获取每个方向的实时数据
-    const directions = await Promise.all(lines.map(async (entry) => {
       const lineDetail = await encryptedAction('bus/line!encryptedLineDetail.action', {
         lineId: entry.line.lineId,
         lineName: entry.line.name || entry.line.lineNo,
@@ -239,7 +255,7 @@ async function fetchRealtimeData() {
 
       return {
         lineId: entry.line.lineId,
-        direction: entry.line.direction,
+        direction: config.direction,
         directionLabel: `${startSn} → ${endSn}`,
         targetStation: entry.targetStation.sn,
         targetOrder: entry.targetStation.order,
@@ -254,10 +270,17 @@ async function fetchRealtimeData() {
       line: '637路',
       city: '武汉',
       cityId: CITY_ID,
+      // 兼容前端：station字段用方向1的站点（去永旺方向）
       station: {
-        name: stationDetail.sn || TARGET_STATION.name,
-        sId: stationDetail.sId || TARGET_STATION.sId
+        name: DIRECTION_CONFIGS[1].targetStation.name,
+        sId: DIRECTION_CONFIGS[1].targetStation.sId
       },
+      // 新增：每个方向的目标站点信息
+      directionStations: DIRECTION_CONFIGS.map(c => ({
+        direction: c.direction,
+        name: c.targetStation.name,
+        sId: c.targetStation.sId
+      })),
       queryTime: new Date().toISOString(),
       queryTimeFormatted: new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }),
       directions
@@ -269,7 +292,7 @@ async function fetchRealtimeData() {
 
     console.log(`[REALTIME] 数据获取成功`);
     for (const d of directions) {
-      console.log(`  方向: ${d.directionLabel}`);
+      console.log(`  方向${d.direction}: ${d.directionLabel} → 目标站: ${d.targetStation}`);
       console.log(`  提示: ${d.tip}`);
       for (const b of d.buses.slice(0, 3)) {
         const eta = b.travelMinutes ? `${b.travelMinutes}分钟` : `${b.diff}站`;
@@ -343,7 +366,7 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, async () => {
   console.log(`[SERVER] 637路公交实时地图服务已启动`);
   console.log(`[SERVER] http://localhost:${PORT}`);
-  console.log(`[SERVER] 目标站点: 子期路梅林四街`);
+  console.log(`[SERVER] 目标站点: 方向0→蔷薇路永旺梦乐城(回家), 方向1→子期路梅林四街(去永旺)`);
   console.log(`[SERVER] 刷新间隔: ${SCRAPE_INTERVAL / 1000}秒`);
 
   // 先获取路线数据（一次性）

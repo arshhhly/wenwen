@@ -8,7 +8,11 @@ const { getUserId, apiAction } = require('../../src/chelaile');
 
 // 637路两个方向的lineId
 const LINE_IDS = ['27238438040', '27238438041'];
-const TARGET_STATION = { name: '子期路梅林四街', sId: '027-4965' };
+// 每个方向的目标站点
+const TARGET_STATIONS = [
+  { direction: 0, name: '蔷薇路永旺梦乐城', sId: '027-3353' },
+  { direction: 1, name: '子期路梅林四街', sId: '027-4965' }
+];
 
 exports.handler = async function (event, context) {
   const headers = {
@@ -58,10 +62,7 @@ exports.handler = async function (event, context) {
         line: '637路',
         city: '武汉',
         cityId: '000',
-        targetStation: {
-          name: TARGET_STATION.name,
-          sId: TARGET_STATION.sId
-        },
+        targetStations: TARGET_STATIONS,
         routes: routeResults
       })
     };
