@@ -146,7 +146,7 @@ body {
 <div class="arrival-card" id="arrivalCard"></div>
 
 <div class="map-section">
-  <div class="map-header">📍 线路地图 · 车辆实时位置</div>
+  <div class="map-header" id="mapHeader">📍 线路地图 · 车辆实时位置</div>
   <div id="map"></div>
 </div>
 
@@ -190,6 +190,16 @@ function bd09ToGcj02(bdLon, bdLat) {
   return [z * Math.cos(theta), z * Math.sin(theta)];
 }
 
+// ========== 计算两点间方位角 ==========
+function getBearing(from, to) {
+  const lat1 = from[0] * Math.PI / 180;
+  const lat2 = to[0] * Math.PI / 180;
+  const dLng = (to[1] - from[1]) * Math.PI / 180;
+  const y = Math.sin(dLng) * Math.cos(lat2);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+}
+
 // ========== 初始化地图 ==========
 function initMap() {
   map = L.map('map', { zoomControl: true, attributionControl: false });
@@ -213,6 +223,10 @@ function drawRouteAndStations() {
     || routeData.routes[currentDirection === 0 ? 0 : 1];
   if (!currentRoute) return;
 
+  // 更新地图标题显示方向
+  const dirLabel = currentDirection === 0 ? '🏠 回家' : '🛒 去永旺';
+  document.getElementById('mapHeader').textContent = `📍 ${dirLabel} · ${currentRoute.directionLabel}`;
+
   const stations = currentRoute.stations;
   const coords = stations.map(s => {
     const gcj = bd09ToGcj02(s.lng, s.lat);
@@ -223,6 +237,52 @@ function drawRouteAndStations() {
     color: '#2980b9', weight: 5, opacity: 0.7, smoothFactor: 1
   }).addTo(map);
   routePolylines.push(polyline);
+
+  // 添加方向箭头
+  const arrowCount = Math.min(6, Math.max(3, Math.floor(coords.length / 4)));
+  const step = Math.floor(coords.length / (arrowCount + 1));
+  for (let i = 1; i <= arrowCount; i++) {
+    const idx = i * step;
+    if (idx >= coords.length) break;
+    const prev = coords[Math.max(0, idx - 1)];
+    const curr = coords[idx];
+    const next = coords[Math.min(coords.length - 1, idx + 1)];
+    const angle = getBearing(prev, next);
+    const arrow = L.marker(curr, {
+      icon: L.divIcon({
+        className: 'direction-arrow',
+        html: `<div style="transform: rotate(${angle}deg);display:inline-block;font-size:20px;line-height:1;color:#2980b9;font-weight:bold;text-shadow:1px 1px 2px white,-1px -1px 2px white,1px -1px 2px white,-1px 1px 2px white;">➤</div>`,
+        iconSize: [20, 20], iconAnchor: [10, 10]
+      }),
+      interactive: false
+    }).addTo(map);
+    routePolylines.push(arrow);
+  }
+
+  // 起点终点标记
+  if (stations.length > 0) {
+    const startGcj = bd09ToGcj02(stations[0].lng, stations[0].lat);
+    const startMarker = L.marker([startGcj[1], startGcj[0]], {
+      icon: L.divIcon({
+        className: 'start-marker',
+        html: `<div style="background:#27ae60;color:white;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);">起</div>`,
+        iconSize: [28, 28], iconAnchor: [14, 14]
+      }),
+      interactive: false
+    }).addTo(map);
+    routePolylines.push(startMarker);
+
+    const endGcj = bd09ToGcj02(stations[stations.length - 1].lng, stations[stations.length - 1].lat);
+    const endMarker = L.marker([endGcj[1], endGcj[0]], {
+      icon: L.divIcon({
+        className: 'end-marker',
+        html: `<div style="background:#e74c3c;color:white;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);">终</div>`,
+        iconSize: [28, 28], iconAnchor: [14, 14]
+      }),
+      interactive: false
+    }).addTo(map);
+    routePolylines.push(endMarker);
+  }
 
   stations.forEach((s, i) => {
     const gcj = bd09ToGcj02(s.lng, s.lat);

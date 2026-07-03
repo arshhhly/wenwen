@@ -68,23 +68,30 @@ exports.handler = async function (event, context) {
         targetOrder: entry.targetStation.order
       }, userId);
 
-      const buses = (lineDetail.buses || []).map(bus => {
-        const order = bus.specialOrder || bus.order;
-        const diff = typeof order === 'number' ? Math.abs(order - lineDetail.targetOrder) : 9999;
-        const travelMinutes = typeof bus.travelTime === 'number' && bus.travelTime > 0
-          ? Math.ceil(bus.travelTime / 60) : null;
-        const distance = typeof bus.distanceToSc === 'number' && bus.distanceToSc >= 0
-          ? bus.distanceToSc : null;
-        return {
-          busId: bus.busId || '-',
-          order,
-          diff,
-          distance,
-          travelMinutes,
-          state: bus.state,
-          timeStr: bus.timeStr || '-'
-        };
-      }).sort((a, b) => a.diff - b.diff).slice(0, 5);
+      const targetOrder = entry.targetStation.order;
+      const buses = (lineDetail.buses || [])
+        .filter(bus => {
+          const order = bus.specialOrder || bus.order;
+          // 只显示还没过目标站的车（order <= targetOrder）
+          return typeof order === 'number' && order <= targetOrder;
+        })
+        .map(bus => {
+          const order = bus.specialOrder || bus.order;
+          const diff = typeof order === 'number' ? targetOrder - order : 9999;
+          const travelMinutes = typeof bus.travelTime === 'number' && bus.travelTime > 0
+            ? Math.ceil(bus.travelTime / 60) : null;
+          const distance = typeof bus.distanceToSc === 'number' && bus.distanceToSc >= 0
+            ? bus.distanceToSc : null;
+          return {
+            busId: bus.busId || '-',
+            order,
+            diff,
+            distance,
+            travelMinutes,
+            state: bus.state,
+            timeStr: bus.timeStr || '-'
+          };
+        }).sort((a, b) => a.diff - b.diff).slice(0, 5);
 
       const startSn = lineDetail.line?.startSn || entry.line.startSn || '-';
       const endSn = lineDetail.line?.endSn || entry.line.endSn || '-';
